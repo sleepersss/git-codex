@@ -1,0 +1,11 @@
+# 只跟踪插件源码和说明；生成物、缓存和本机设置不进入版本库。
+**/bin/
+**/obj/
+**/packages/
+*.user
+*.suo
+*.cache
+*.log
+*.pext
+.vs/
+
