@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "activation_mode": "dry_run",
+  "source_root": "E:\\1_Game\\steam\\steamapps\\workshop\\content\\431960",
+  "project_root": "D:\\7_Video\\20_Wallpaper Engine",
+  "startup": {
+    "once_per_boot": true,
+    "wait_for_wallpaper_process": true,
+    "wallpaper_process_names": ["wallpaper32.exe", "wallpaper64.exe"],
+    "wait_timeout_seconds": 300,
+    "source_stable_seconds": 15
+  },
+  "processing": {
+    "videos": true,
+    "scenes": true,
+    "web": false,
+    "retry_error_records": false,
+    "continue_after_item_error": true,
+    "include_likely_loop_overrides": false,
+    "review_scene_policy": "apply_safe_and_continue",
+    "remove_verified_temp_inputs": false
+  },
+  "tools": {
+    "node": "node.exe",
+    "powershell": "powershell.exe",
+    "repkg": "D:\\0_Vital document\\tools\\RePKG-GUI_v1.0.1\\RePKG.exe"
+  }
+}
+

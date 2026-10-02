@@ -1,0 +1,13 @@
+runtime/
+temp/
+database/
+wallpaper/
+report/
+*.log
+*.mpkg
+*.mp4
+*.pkg
+*.exe
+*.dll
+*.obj
+
