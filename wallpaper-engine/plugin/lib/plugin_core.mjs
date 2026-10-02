@@ -82,7 +82,6 @@ export async function scanWorkshopSource(sourceRoot) {
     const workshopDir = path.join(resolvedRoot, id);
     const projectPath = path.join(workshopDir, "project.json");
     if (!(await exists(projectPath))) {
-      entries.push({ id, workshop_dir: workshopDir, type: "UNKNOWN", project: null, project_error: "PROJECT_JSON_MISSING", project_path: projectPath, project_hash: null, payload_manifest: [] });
       warnings.push({ workshopid: id, code: "PROJECT_JSON_MISSING" });
       continue;
     }
@@ -100,7 +99,6 @@ export async function scanWorkshopSource(sourceRoot) {
         payload_manifest: await payloadManifest(type, project, workshopDir),
       });
     } catch (error) {
-      entries.push({ id, workshop_dir: workshopDir, type: "UNKNOWN", project: null, project_error: `PROJECT_JSON_INVALID: ${error.message}`, project_path: projectPath, project_hash: null, payload_manifest: [] });
       warnings.push({ workshopid: id, code: "PROJECT_JSON_INVALID", message: error.message });
     }
   }

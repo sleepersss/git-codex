@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
-import { applyInventoryToDatabase, buildProcessingPlan, makeDatabaseRecord, normalizeType } from "../lib/plugin_core.mjs";
+import { applyInventoryToDatabase, buildProcessingPlan, makeDatabaseRecord, normalizeType, scanWorkshopSource } from "../lib/plugin_core.mjs";
 
 const config = { processing: { retry_error_records: false } };
 
@@ -59,4 +62,19 @@ test("web records are retained as SKIPPED_WEB", () => {
   const record = makeDatabaseRecord(entry("9", "web"), "2026-10-02T00:00:00.000Z");
   assert.equal(record.processing_status, "SKIPPED_WEB");
   assert.equal(record.conversion_status, "SKIPPED_WEB");
+});
+
+test("incomplete numeric directories warn but never become database candidates", async () => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "wallpaper-source-"));
+  const sourceRoot = path.join(temporary, "431960");
+  try {
+    await fs.mkdir(path.join(sourceRoot, "123"), { recursive: true });
+    await fs.mkdir(path.join(sourceRoot, "456"), { recursive: true });
+    await fs.writeFile(path.join(sourceRoot, "456", "project.json"), "{invalid", "utf8");
+    const inventory = await scanWorkshopSource(sourceRoot);
+    assert.deepEqual(inventory.entries, []);
+    assert.deepEqual(inventory.warnings.map((item) => item.code).sort(), ["PROJECT_JSON_INVALID", "PROJECT_JSON_MISSING"]);
+  } finally {
+    await fs.rm(temporary, { recursive: true, force: true });
+  }
 });

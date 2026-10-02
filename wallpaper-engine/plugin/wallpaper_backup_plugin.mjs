@@ -87,6 +87,8 @@ async function sourceSnapshot(sourceRoot) {
   for (const entry of await fs.readdir(sourceRoot, { withFileTypes: true })) {
     if (!entry.isDirectory() || !/^\d+$/.test(entry.name)) continue;
     const itemRoot = path.join(sourceRoot, entry.name);
+    const itemStat = await fs.stat(itemRoot);
+    rows.push(`${entry.name}|DIR|${Math.trunc(itemStat.mtimeMs)}`);
     const project = path.join(itemRoot, "project.json");
     const files = [project, path.join(itemRoot, "scene.pkg")];
     if (await exists(project)) {
