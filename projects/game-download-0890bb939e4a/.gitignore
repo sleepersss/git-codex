@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+archive-test/
+*.zip
+native/host.cmd
+native/host-manifest.json
+native/registry-backup.json
+docs/*-preview.png
+tests/profile-*/
+native/data/

@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "游戏下载归档助手",
+  "version": "0.2.2",
+  "description": "从游戏介绍页识别PC包，在当前Edge登录状态下下载，并交给本地助手解压归档。",
+  "permissions": ["activeTab", "scripting", "storage", "downloads", "nativeMessaging", "alarms", "webRequest"],
+  "host_permissions": ["https://*.139.com/*", "https://*.cmecloud.cn/*", "https://sway.cloud.microsoft/*", "https://sway.office.com/*", "https://sway.com/*"],
+  "optional_host_permissions": ["https://*/*"],
+  "background": {"service_worker": "background.js"},
+  "action": {"default_popup": "popup.html", "default_title": "游戏下载归档助手"},
+  "options_page": "options.html",
+  "content_scripts": [{"matches": ["https://sway.cloud.microsoft/*", "https://sway.office.com/*", "https://sway.com/*"], "js": ["core.js", "capture.js"]}]
+}
