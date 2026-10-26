@@ -1,12 +1,16 @@
-# Mod 素材提取工具 v3.3-r6
+# Mod 素材提取工具 v3.3-r7
 
-当前入口：`outputs/mod-extractor-desktop-v3.3-r6/ModExtractor/ModExtractor.exe`。双击本目录的 `启动提取工具.cmd` 也可启动。必须保留整个 `ModExtractor` 文件夹，不要单独移动 EXE。已打开的旧版窗口不会自动升级。
+当前入口：`outputs/mod-extractor-desktop-v3.3-r7/ModExtractor/ModExtractor.exe`。双击本目录的 `启动提取工具.cmd` 也可启动。必须保留整个 `ModExtractor` 文件夹，不要单独移动 EXE。已打开的旧版窗口不会自动升级。
+
+v3.3-r7 修复重新选择旧 Mod 时反复出现的 `WinError 2 ... sources/.../payload`：命中明确已冷归档的来源后，用当前选中、清单和 SHA 完全一致的 Mod 恢复本次来源备份，再进入原提取流程。保留原来源 ID、归档证明、模型 ID 和历史；只恢复本次来源，不解压整个历史归档或重建全库索引。已有散放备份被改动或损坏时仍停止，不覆盖旧文件；复制、核对或记录写入失败时回退。该修复不改变模型提取或身体选择规则。
+
+同一真实样本的后续检查还发现：部分 TexCoord 字节按半精度解读会出现非有限值，Herta 曾把它们转为零。r7 沿用已有原始字节保留办法，对每个网格分别标出这些无法解释的通道，保留 `SourceTexcoordRaw*` 原字节并移除误标为 UV 的层；有效 UV 和网格不变，核验报告明确这些通道的含义未验证。不会将填零解释为源 UV 一致。
 
 v3.3-r6 新增两项删除：任务页「删除处理记录和工作文件」同时移除选中记录及整个对应任务文件夹，保留已入库素材；素材页「删除所选素材」移除该素材的模型/预览/测量/核验文件并同步索引，保留原 Mod、来源备份和其他素材。两种操作都要在弹窗再次点击「确认删除」，默认和 Esc 均取消；运行或编辑期间不能删除。删除前会生成 ZIP 并逐文件读回核对，失败不删；素材编号不会因删除而复用。
 
 恢复资料：任务删除保存在 work 同级的 `backups/mod-extractor-deletions/tasks`，素材删除保存在素材库 `history/deleted-assets`。每个 ZIP 内 `recovery-manifest.json` 记录原路径和 SHA，文件位于 `payload/`；恢复前退出工具，在独立目录解压核对，确认不与现有编号/文件冲突后再放回原位置，并使用现有索引重建流程。不要覆盖已有素材。
 
-本次整个根 work 与旧版软件的清理记录见 `reports/mod-extractor-maintenance-20261027`，恢复归档在 `归档待上传115/WorkspaceWork_20261027`，仅为本地归档。工作区当前只保留 r6 的展开程序；已验收的 r5 原字节可按恢复清单取回。
+r6 阶段整个根 work 与旧版软件的清理记录见 `reports/mod-extractor-maintenance-20261027`，恢复归档在 `归档待上传115/WorkspaceWork_20261027`，仅为本地归档。当时只保留 r6 的展开程序；已验收的 r5 原字节可按恢复清单取回。当前修复版为上面的 r7，r6 暂留供回退。
 
 源码备份只包含 `tools/mod-extractor`、它使用的 `model-library/library.py`、`locking.py`、`inspect_blend.py` 与工作区规则，不含模型、来源数据、个人配置或 EXE。恢复源码后，将 `config.example.json` 复制为 `config.json`，填写本机工具路径；安装 `requirements-desktop.txt`，运行 `python tools/mod-extractor/build_desktop.py` 打包。首次使用仍需本机 Blender、Sword 和 Herta；它们不随 Git 分发。
 

@@ -213,8 +213,13 @@ class Library:
         manifest, digest = inventory(path)
         if not manifest:
             raise ValueError('来源为空')
-        for _, doc in self.documents()[1]:
+        for metadata, doc in self.documents()[1]:
             if doc['game'] == game and doc['manifest_sha256'] == digest:
+                if (doc.get('archive', {}).get('loose_payload_present') is False
+                        and not self.inside(doc['payload']).exists()):
+                    if doc['manifest'] != manifest:
+                        raise ValueError('当前选择的 Mod 与归档来源清单不同，未恢复备份')
+                    return self._restore_archived_source(metadata, doc, path)
                 self.verify_source(doc)
                 return doc
         ident = self.allocate(game, source=True)
@@ -243,6 +248,57 @@ class Library:
                 shutil.rmtree(staging)
         self.rebuild()
         return doc
+
+    def _restore_archived_source(self, metadata, doc, source):
+        """Rehydrate one explicitly reselected, byte-identical archived source.
+
+        Keep the source ID and archive provenance; never replace a present
+        payload or use this path to repair a corrupt/unarchived backup.
+        """
+        target = self.root / doc['payload']
+        if target != metadata.parent / 'payload' or target.resolve() != target:
+            raise ValueError('归档来源恢复路径异常，未写入')
+        for directory in (metadata.parent, self.root / 'cache'):
+            for part in (directory, *directory.parents):
+                if part.is_symlink() or (hasattr(part, 'is_junction') and part.is_junction()):
+                    raise ValueError('归档来源恢复路径包含链接，未写入')
+                if part == self.root: break
+        original = metadata.read_bytes()
+        staging = Path(tempfile.mkdtemp(prefix='source-restore-', dir=self.root / 'cache'))
+        staged_payload = staging / 'payload'
+        published = False
+        try:
+            if source.is_dir(): shutil.copytree(source, staged_payload)
+            else:
+                staged_payload.mkdir(); shutil.copy2(source, staged_payload / source.name)
+            rows, digest = inventory(staged_payload)
+            if rows != doc['manifest'] or digest != doc['manifest_sha256']:
+                raise ValueError('当前 Mod 的恢复副本哈希不一致，未写入')
+            backup = metadata.with_name('metadata-before-' + staging.name + '.json')
+            backup.write_bytes(original)
+            if backup.read_bytes() != original: raise ValueError('来源记录备份核对失败')
+            updated = json.loads(json.dumps(doc))
+            at = now()
+            updated['archive'].update(loose_payload_present=True, restored_at=at,
+                                      restored_from=str(source))
+            updated['backup_verified'] = True
+            updated['history'].append({'at': at, 'action': 'archived_source_restored_from_selected_mod',
+                                       'manifest_sha256': digest, 'selected_path': str(source)})
+            # Rename refuses an existing destination; no old source is overwritten.
+            if target.exists(): raise ValueError('来源备份已被其他操作恢复，请重试')
+            staged_payload.rename(target); published = True
+            write_json(metadata, updated)
+            # Identity and manifest are unchanged, as in the existing source
+            # reuse path. Rehydrating one cache must not rebuild unrelated assets.
+            return updated
+        except Exception:
+            if published:
+                rollback = staging / 'metadata-rollback.json'; rollback.write_bytes(original)
+                os.replace(rollback, metadata)
+                target.rename(staged_payload)
+            raise
+        finally:
+            if staging.exists(): shutil.rmtree(staging)
 
     def verify_source(self, doc):
         rows, digest = inventory(self.inside(doc['payload']))

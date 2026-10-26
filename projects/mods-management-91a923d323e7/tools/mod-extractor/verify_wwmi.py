@@ -39,6 +39,9 @@ for role in (('full','body') if decision['status']=='eligible' else ('full',)):
         if role=='body':original=original[np.all(np.isin(original,mapping),axis=1)]
         assert np.array_equal(source_loops.reshape(-1,3),original),obj.name+' topology'
         uv_mapping=json.loads(obj.get('UVSourceLaneMap',json.dumps({'TEXCOORD'+(str(i) if i else '')+'.xy':i for i in range(4)})))
+        expected_uv_mapping={'TEXCOORD'+(str(i) if i else '')+'.xy':i for i in range(4)
+                             if np.isfinite(tex[mapping,2*i:2*i+2]).all() and not (job['name']=='iuno' and i==1)}
+        assert uv_mapping==expected_uv_mapping,obj.name+' source UV lane map'
         for layer_name,i in uv_mapping.items():
             layer=mesh.uv_layers[layer_name]
             expected=tex[source_loops,2*i:2*i+2].copy();expected[:,1]=1-expected[:,1]
@@ -49,9 +52,10 @@ for role in (('full','body') if decision['status']=='eligible' else ('full',)):
             assert np.array_equal(uv.reshape(-1,2),expected),obj.name+' UV'+str(i)
         source_tex=np.fromfile(source/'Meshes'/(((obj['SourceGroup']+'_') if obj['SourceGroup'] else '')+'TexCoord.buf'),dtype='u1').reshape(-1,16)
         for lane in range(4):
-            if 'SourceTexcoordRaw'+str(lane) in mesh.attributes:
-                raw=np.empty(n,dtype=np.int32);mesh.attributes['SourceTexcoordRaw'+str(lane)].data.foreach_get('value',raw)
-                assert np.array_equal(raw,source_tex[mapping,lane*4:lane*4+4].copy().view('<i4').ravel())
+            attr_name='SourceTexcoordRaw'+str(lane)
+            assert attr_name in mesh.attributes,obj.name+' missing '+attr_name
+            raw=np.empty(n,dtype=np.int32);mesh.attributes[attr_name].data.foreach_get('value',raw)
+            assert np.array_equal(raw,source_tex[mapping,lane*4:lane*4+4].copy().view('<i4').ravel()),obj.name+' '+attr_name
         lanes=b.shape[1]//2
         for v,old in zip(mesh.vertices,mapping):
             expected={str(int(g)):float(np.float32(float(w)/255.0)) for g,w in zip(b[old,:lanes],b[old,lanes:lanes*2]) if w}
@@ -102,8 +106,11 @@ for role in (('full','body') if decision['status']=='eligible' else ('full',)):
                 assert key.value==0
                 shape_count+=1
         checks.append({'name':obj.name,'vertices':n,'triangles':len(mesh.polygons),'coordinates_source_exact':True,'topology_source_exact':True,'verified_uv_layers':len(uv_mapping),'raw_texcoord_exact':all('SourceTexcoordRaw'+str(i) in mesh.attributes for i in range(4)),
+                       'ambiguous_texcoord_lanes':json.loads(obj.get('AmbiguousTexcoordLanes','[]')),
                        'weights_exact':True,'raw_blend_exact':True,'color_source_verified':True,'shape_targets_verified':shape_count,'custom_normals_present':mesh.has_custom_normals})
     assert checks;results[role]={'saved_file_reopened':True,'meshes':checks}
 results['status']='passed';results['limits']=['Numeric bone groups are not a skeleton','Native shape targets checked against Sword conversion, external keys against source HLSL rule','No textures, shaders or in-game animated export check']
+if any(m['ambiguous_texcoord_lanes'] for role in ('full','body') if role in results for m in results[role]['meshes']):
+    results['limits'].append('Non-finite half lanes are retained as exact raw attributes; their source semantics are unverified and not reported as valid UV')
 (run/'data-preservation-verification.json').write_text(json.dumps(results,ensure_ascii=False,indent=2),encoding='utf-8')
 print('DATA_PRESERVATION_VERIFIED',len(results['full']['meshes']),decision['status'])

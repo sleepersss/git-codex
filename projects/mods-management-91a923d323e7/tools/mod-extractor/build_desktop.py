@@ -22,7 +22,7 @@ bundle=COLLECT(gui,worker,a.binaries,a.datas,strip=False,upx=False,name='ModExtr
 ''',encoding='utf-8')
 subprocess.run([sys.executable,'-m','PyInstaller','--clean','--noconfirm','--distpath',str(out),'--workpath',str(build/'cache'),str(spec)],check=True)
 from app_paths import resolve_paths
-previous=ROOT/'outputs/mod-extractor-desktop-v3.3-r5/ModExtractor/settings.json'
+previous=ROOT/'outputs/mod-extractor-desktop-v3.3-r6/ModExtractor/settings.json'
 if not previous.is_file():previous=out/'ModExtractor/settings.json'
 cfg=json.loads(previous.read_text(encoding='utf-8-sig')) if previous.is_file() else resolve_paths()
 cfg.pop('config_path',None)

@@ -21,6 +21,20 @@ for role in (('full','body') if decision['status']=='eligible' else ('full',)):
             if layer:obj.data.uv_layers.remove(layer)
             mapping_uv.pop('TEXCOORD1.xy')
             obj['AmbiguousTexcoordLane']='Bytes4..7 retained exactly as SourceTexcoordRaw1; installed layout supports packed color here, shader semantics unverified'
+        ambiguous=[]
+        for layer_name,lane in list(mapping_uv.items()):
+            half=tex[mapping,lane*4:lane*4+4].copy().view('<f2')
+            nonfinite=int(np.count_nonzero(~np.isfinite(half)))
+            if not nonfinite:continue
+            # Packed or otherwise unexplained bytes cannot be valid finite UV.
+            # Preserve them above, rather than accepting Herta's zero substitution.
+            layer=obj.data.uv_layers.get(layer_name)
+            if layer:obj.data.uv_layers.remove(layer)
+            mapping_uv.pop(layer_name)
+            ambiguous.append({'lane':lane,'nonfinite_half_values':nonfinite,
+                'raw_attribute':'SourceTexcoordRaw'+str(lane),
+                'status':'raw_bytes_retained_semantics_unverified'})
+        if ambiguous:obj['AmbiguousTexcoordLanes']=json.dumps(ambiguous)
         obj['UVSourceLaneMap']=json.dumps(mapping_uv)
         if role=='full' and job['name']=='denia' and obj['SourceGroup']!='ib0':
             obj.hide_render=True;obj.hide_set(True)
@@ -32,4 +46,4 @@ for role in (('full','body') if decision['status']=='eligible' else ('full',)):
                              'vertex_groups':len(o.vertex_groups),'shape_keys':len(o.data.shape_keys.key_blocks) if o.data.shape_keys else 0} for o in bpy.data.objects if o.type=='MESH']
         selection['raw_texcoord_retained']=True
         (run/'body-selection.json').write_text(json.dumps(selection,ensure_ascii=False,indent=2),encoding='utf-8')
-print('RAW_TEXCOORD_RETAINED; ambiguous Iuno lane parked, no silently zeroed UV accepted')
+print('RAW_TEXCOORD_RETAINED; non-finite half lanes parked per mesh; source semantics unverified')

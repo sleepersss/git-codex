@@ -1,7 +1,7 @@
 """Separate bundled code, external tools, and writable user data."""
 import os,sys,json
 from pathlib import Path
-APP_VERSION='3.3-r6'
+APP_VERSION='3.3-r7'
 
 def resource_root():
     return Path(sys._MEIPASS) if getattr(sys,'frozen',False) else Path(__file__).resolve().parents[2]
