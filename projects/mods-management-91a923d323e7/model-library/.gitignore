@@ -1,0 +1,10 @@
+models/**/*.blend
+models/**/previews/
+sources/**/payload/
+database/
+cache/
+reports/
+__pycache__/
+*.pyc
+config.json
+history/
